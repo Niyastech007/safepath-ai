@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafePath AI – Tiruchirappalli (Trichy) Safe Route Planner & Security Companion</title>
+
+    <!-- Google Fonts: Plus Jakarta Sans & Inter for Ultra-Crisp Dark Mode Rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- 100% Self-Contained App Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- ======================================================== -->
+    <!-- 1. TOP HEADER & DESKTOP NAVIGATION TABS                  -->
+    <!-- ======================================================== -->
+    <header class="app-header">
+        <!-- Brand Section -->
+        <div class="brand-section">
+            <div class="brand-logo">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+            </div>
+            <div>
+                <div class="brand-title">
+                    SafePath <span class="hl">AI</span>
+                    <span class="badge-tag badge-location">📍 Trichy</span>
+                    <span class="badge-tag badge-track">HCA-05 Smart Cities</span>
+                </div>
+                <p class="brand-subtitle">AI Safe Route Planner & Personal Security Companion (HACKWELL 2.0)</p>
+            </div>
+        </div>
+
+        <!-- Desktop Navigation Tabs -->
+        <nav class="desktop-nav-tabs" id="desktopNavTabs" aria-label="Main Navigation">
+            <button class="nav-tab-btn active" data-tab="navigate" id="tab-btn-navigate" title="Route Planning & Options">
+                <span class="tab-icon">🗺️</span>
+                <span class="tab-label">Navigate</span>
+            </button>
+            <button class="nav-tab-btn" data-tab="safety" id="tab-btn-safety" title="Explainable AI & Safety Analysis">
+                <span class="tab-icon">🧠</span>
+                <span class="tab-label">Safety Analysis</span>
+            </button>
+            <button class="nav-tab-btn" data-tab="emergency" id="tab-btn-emergency" title="Emergency Hub & Immediate Actions">
+                <span class="tab-icon">🚨</span>
+                <span class="tab-label">Emergency</span>
+            </button>
+            <button class="nav-tab-btn" data-tab="nearby" id="tab-btn-nearby" title="Nearby Support & Context POIs">
+                <span class="tab-icon">📍</span>
+                <span class="tab-label">Nearby Support</span>
+            </button>
+            <button class="nav-tab-btn" data-tab="report" id="tab-btn-report" title="Report Community Street Hazard">
+                <span class="tab-icon">⚠️</span>
+                <span class="tab-label">Report Hazard</span>
+            </button>
+        </nav>
+
+        <!-- Header Quick Widgets & SOS -->
+        <div class="header-actions">
+            <!-- Weather Widget Pill -->
+            <button id="headerWeatherWidget" class="header-status-widget" title="Click for Trichy Live Weather Details">
+                <span id="weatherIcon">🌤️</span>
+                <span id="weatherTemp">31.5°C</span>
+                <span id="weatherCondition" style="display: none;">Clear</span>
+                <span id="weatherLiveBadge" class="badge-micro badge-live">LIVE</span>
+            </button>
+
+            <!-- Data Confidence Widget Pill -->
+            <button id="headerDataWidget" class="header-status-widget" title="Click for Data Sources & Methodology">
+                <span style="font-size: 14px;">🛡️</span>
+                <span id="dashConfidenceScore">High (86%)</span>
+                <span id="dashHazardsCount" style="display: none;">3 Active</span>
+            </button>
+
+
+            <!-- Legacy Button Ref for Data Sources (Kept for compatibility) -->
+            <button id="btnDataSources" style="display: none;"></button>
+        </div>
+    </header>
+
+    <!-- ======================================================== -->
+    <!-- 2. MAIN CONTAINER: COLLAPSIBLE SIDEBAR + MAP WORKSPACE   -->
+    <!-- ======================================================== -->
+    <div class="main-container" id="appContainer">
+
+        <!-- Collapsible Feature Sidebar Panel -->
+        <aside class="sidebar-panel" id="sidebarPanel">
+            
+            <!-- Sidebar Header / Status Bar -->
+            <div class="sidebar-top-bar">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="live-dot animate-pulse"></span>
+                    <span class="sidebar-mode-label" id="sidebarCurrentTabTitle">ROUTE PLANNER</span>
+                </div>
+                <span id="dashLastUpdated" class="sidebar-timestamp">Updated: Just now</span>
+            </div>
+
+            <!-- ==================================================== -->
+            <!-- TAB 1: 🗺️ NAVIGATE                                    -->
+            <!-- ==================================================== -->
+            <div id="pane-navigate" class="tab-pane active">
+                
+                <!-- Demo Preset Selector -->
+                <div class="field-group">
+                    <label class="field-label">Featured Demo Scenarios (Trichy)</label>
+                    <select id="presetSelect" class="app-select">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <!-- Origin & Destination -->
+                <div class="grid-2 glass-box">
+                    <div class="field-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label class="field-label" style="color: #34d399; margin-bottom: 0;">● Origin (A)</label>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" id="btnPinStartOnMap" class="btn-text-action" title="Click on Map to Set Starting Origin">
+                                    🎯 Map Pin
+                                </button>
+                                <button type="button" id="btnUseLiveGPS" class="btn-text-action" title="Set My Live GPS Location as Origin">
+                                    📍 Live GPS
+                                </button>
+                            </div>
+                        </div>
+                        <select id="startNodeSelect" class="app-select"></select>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label" style="color: #f87171;">● Destination (B)</label>
+                        <select id="endNodeSelect" class="app-select"></select>
+                    </div>
+                </div>
+
+                <!-- Time Modifier / Commute Context -->
+                <div class="glass-box" style="padding: 12px 14px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 13px;">⏰</span>
+                            <span style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">Commute Context</span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" id="btn-time-night" class="time-pill-btn active" title="Night Mode: Streetlight illumination & police proximity prioritized">🌙 Night</button>
+                            <button type="button" id="btn-time-evening" class="time-pill-btn" title="Evening Mode: Balanced peak transit weighting">🌆 Evening</button>
+                            <button type="button" id="btn-time-day" class="time-pill-btn" title="Day Mode: High pedestrian footfall & commercial streets prioritized">☀️ Day</button>
+                        </div>
+                    </div>
+
+                    <!-- Commute Context Explainer Banner -->
+                    <div id="commuteContextBanner" class="commute-context-strip mode-night">
+                        <span id="commuteContextIcon" class="commute-strip-icon">🌙</span>
+                        <div class="commute-strip-body">
+                            <div id="commuteContextTitle" class="commute-strip-title">Night Safety Priority</div>
+                            <div id="commuteContextDesc" class="commute-strip-desc">
+                                Streetlight coverage (35%) & police emergency radius (15%) prioritized. Hazard penalties weighted 1.3×.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Primary Action: Find Safe Routes -->
+                <button id="btnFindRoutes" class="btn-primary-action" style="width: 100%; margin: 6px 0 10px;">
+                    🔍 FIND SAFE ROUTES
+                </button>
+
+                <!-- AI Evaluated Routes List -->
+                <div class="field-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label class="field-label" style="margin-bottom: 0;">Evaluated Route Options</label>
+                        <span style="font-size: 10px; color: #34d399; font-weight: 700;">Multi-Objective Dijkstra</span>
+                    </div>
+                    <div id="routeCardsContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- 🚀 Google Maps Navigation Primary Launch Button -->
+                    <button id="btnStartGoogleNav" class="btn-start-google-nav" type="button" onclick="window.appController.startGoogleNavigation()">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="google-nav-arrow-circle">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
+                                </svg>
+                            </div>
+                            <div style="text-align: left;">
+                                <strong style="font-size: 13px; display: block; color: #ffffff; letter-spacing: 0.3px;">START NAVIGATION</strong>
+                                <span id="navStartMeta" style="font-size: 10px; color: #bbf7d0;">Safest Route • Tap to begin live guidance</span>
+                            </div>
+                        </div>
+                        <span class="btn-nav-go-chip">GO</span>
+                    </button>
+                </div>
+
+                <!-- Quick Navigation Action Hub -->
+                <div class="quick-nav-actions">
+                    <button class="btn-quick-nav" id="btnQuickToSafety" onclick="window.appController.switchTab('safety')">
+                        <span style="font-size: 16px;">🧠</span>
+                        <div style="text-align: left;">
+                            <strong style="font-size: 11px; display: block; color: #ffffff;">View Safety Analysis</strong>
+                            <span style="font-size: 9.5px; color: #94a3b8;">XAI justifications & Why Not Fastest</span>
+                        </div>
+                        <span style="margin-left: auto; color: #38bdf8;">→</span>
+                    </button>
+                    <button class="btn-quick-nav highlight" id="btnQuickToEmergency" onclick="window.appController.switchTab('emergency')">
+                        <span style="font-size: 16px;">🚨</span>
+                        <div style="text-align: left;">
+                            <strong style="font-size: 11px; display: block; color: #f87171;">Emergency & Security Hub</strong>
+                            <span style="font-size: 9.5px; color: #cbd5e1;">Instant SOS, Fake Call & Safety Contacts</span>
+                        </div>
+                        <span style="margin-left: auto; color: #f87171;">→</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- ==================================================== -->
+            <!-- TAB 2: 🧠 SAFETY ANALYSIS (EXPLAINABLE AI)            -->
+            <!-- ==================================================== -->
+            <div id="pane-safety" class="tab-pane">
+                
+                <div class="pane-header-box">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 20px;">🧠</span>
+                        <div>
+                            <h3 class="pane-title-text">Explainable AI (XAI) Safety Analysis</h3>
+                            <p class="pane-subtitle-text">Transparent mathematical justification & infrastructure evaluation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Route Header Pill -->
+                <div class="glass-box" style="padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <span style="font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Evaluated Route:</span>
+                        <div id="xaiSelectedRouteTitle" style="font-size: 13px; font-weight: 700; color: #34d399; letter-spacing: -0.1px; margin-top: 2px;">
+                            Safest Route (Recommended)
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="route-switch-mini-btn active" data-route="safest" onclick="window.appController.selectRoute('safest')">Safest</button>
+                        <button class="route-switch-mini-btn" data-route="balanced" onclick="window.appController.selectRoute('balanced')">Balanced</button>
+                        <button class="route-switch-mini-btn" data-route="fastest" onclick="window.appController.selectRoute('fastest')">Fastest</button>
+                    </div>
+                </div>
+
+                <!-- XAI AI Verdict Box -->
+                <div id="aiVerdict" class="xai-verdict-box" style="margin-bottom: 12px;"></div>
+
+                <!-- Key Factors List -->
+                <div class="field-group">
+                    <label class="field-label" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; color: #94a3b8;">Key Deciding Safety Factors</label>
+                    <ul id="aiKeyFactors" style="display: flex; flex-direction: column; gap: 9px; list-style: none; padding: 0; margin-bottom: 8px;">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+
+                <!-- 8-Metric Safety Grid -->
+                <div class="glass-box" style="padding: 12px 14px; margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.6px;">8-Point Multi-Metric Scorecard</span>
+                        <span class="badge-micro badge-verified">Weighted Algorithm</span>
+                    </div>
+
+                    <!-- Metric 1: Streetlights -->
+                    <div class="metric-row">
+                        <div class="metric-header">
+                            <span>💡 Streetlight Illumination</span>
+                            <span id="valLighting" style="color: #fbbf24; font-weight: 700;">94%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div id="barLighting" class="metric-bar-fill" style="width: 94%; background: #fbbf24;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 2: Footfall -->
+                    <div class="metric-row">
+                        <div class="metric-header">
+                            <span>👥 Pedestrian Footfall & Open Shops</span>
+                            <span id="valCrowd" style="color: #34d399; font-weight: 700;">87%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div id="barCrowd" class="metric-bar-fill" style="width: 87%; background: #34d399;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 3: CCTV -->
+                    <div class="metric-row">
+                        <div class="metric-header">
+                            <span>📹 Municipal CCTV Surveillance</span>
+                            <span id="valCCTV" style="color: #60a5fa; font-weight: 700;">92%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div id="barCCTV" class="metric-bar-fill" style="width: 92%; background: #60a5fa;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 4: Crime & Risk Reduction -->
+                    <div class="metric-row">
+                        <div class="metric-header">
+                            <span>🛡️ Lower Estimated Crime & Incident Risk</span>
+                            <span id="valRiskReduction" style="color: #2dd4bf; font-weight: 700;">95%</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div id="barRiskReduction" class="metric-bar-fill" style="width: 95%; background: #2dd4bf;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Additional 4 Metric Indicators (Grid) -->
+                    <div class="grid-2" style="margin-top: 10px; gap: 8px;">
+                        <div class="sub-metric-tile">
+                            <span class="sub-metric-label">👮 Police Proximity</span>
+                            <span id="valPoliceProximity" class="sub-metric-val text-blue-400">High (< 400m)</span>
+                        </div>
+                        <div class="sub-metric-tile">
+                            <span class="sub-metric-label">⚠️ Active Hazards</span>
+                            <span id="valHazardCount" class="sub-metric-val text-emerald-400">0 On Corridor</span>
+                        </div>
+                        <div class="sub-metric-tile">
+                            <span class="sub-metric-label">🌤️ Weather Impact</span>
+                            <span id="valWeatherFactor" class="sub-metric-val text-amber-400">Clear (0% Penalty)</span>
+                        </div>
+                        <div class="sub-metric-tile">
+                            <span class="sub-metric-label">📊 Data Confidence</span>
+                            <span id="valConfidenceLevel" class="sub-metric-val text-purple-400">High (86%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🌟 "Why Not The Fastest Route?" Comparative Card -->
+                <div id="whyNotFastestBox" class="why-not-fastest-card hidden">
+                    <div class="wnf-header">
+                        <span style="font-size: 15px;">❓</span>
+                        <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #fbbf24; letter-spacing: 0.6px;">
+                            Why Not The Fastest Route?
+                        </span>
+                    </div>
+                    <div id="wnfSummaryText" class="wnf-summary">
+                        <!-- Populated by JS -->
+                    </div>
+                    <ul id="wnfReasonsList" class="wnf-reasons">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+
+                <div class="xai-disclaimer" style="margin: 12px 0;">
+                    ℹ️ SafePath AI estimates relative safety conditions based on available infrastructure, environmental, and incident data. Users retain full discretion.
+                </div>
+
+                <button class="btn-primary-action" style="width: 100%;" onclick="window.appController.switchTab('navigate')">
+                    🗺️ Return to Route Navigation →
+                </button>
+
+            </div>
+
+            <!-- ==================================================== -->
+            <!-- TAB 3: 🚨 EMERGENCY & PERSONAL SECURITY             -->
+            <!-- ==================================================== -->
+            <div id="pane-emergency" class="tab-pane">
+                
+                <div class="pane-header-box" style="border-left: 3px solid #ef4444; padding-left: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 20px;">🚨</span>
+                        <div>
+                            <h3 class="pane-title-text" style="color: #f87171;">Trichy Emergency & Security Hub</h3>
+                            <p class="pane-subtitle-text">Instant deterrence, SOS sirens, and nearest emergency dispatch.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Location Coordinates Card -->
+                <div class="glass-box" style="padding: 10px 14px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 10.5px; font-weight: 700; color: #cbd5e1;">📍 Traveler Live Coordinates:</span>
+                        <button id="btnEmergencyRefreshGPS" class="btn-text-action">Refresh Fix</button>
+                    </div>
+                    <div id="emergencyGPSDisplay" style="font-family: monospace; font-size: 11.5px; color: #38bdf8; margin-top: 4px; font-weight: 700;">
+                        10.8150° N, 78.6920° E (Trichy Central)
+                    </div>
+                    <span style="font-size: 9.5px; color: #94a3b8; display: block; margin-top: 2px;">
+                        Automatically embedded into emergency SMS & WhatsApp payload.
+                    </span>
+                </div>
+
+                <!-- 3 Major Emergency Actions -->
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+                    <!-- 1. SOS Button -->
+                    <button id="btnEmergencySOS" class="action-btn-large bg-danger">
+                        <span style="font-size: 26px;">🚨</span>
+                        <div style="text-align: left;">
+                            <strong style="font-size: 13px; display: block; color: white;">1-TAP EMERGENCY SOS</strong>
+                            <span style="font-size: 10px; color: #fecaca;">Sound siren, locate nearest station, copy WhatsApp payload</span>
+                        </div>
+                    </button>
+
+                    <!-- 2. Fake Call Button & Quick Voice Setup -->
+                    <div style="display: flex; gap: 8px; width: 100%;">
+                        <button id="btnEmergencyFakeCall" class="action-btn-large bg-amber" style="flex: 1;">
+                            <span style="font-size: 26px;">📞</span>
+                            <div style="text-align: left;">
+                                <strong style="font-size: 13px; display: block; color: white;">ANTI-STALKER FAKE CALL</strong>
+                                <span id="fakeCallBtnSubtitle" style="font-size: 10px; color: #fef3c7;">Incoming from Dad ❤️ (Custom Record / Voice)</span>
+                            </div>
+                        </button>
+                        <button id="btnOpenFakeCallConfig" class="action-btn-large" title="Record Custom Voice / Configure Caller" style="width: 58px; min-width: 58px; background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0; cursor: pointer; transition: all 0.2s;">
+                            <span style="font-size: 18px;">🎙️</span>
+                            <span style="font-size: 9px; font-weight: 800; color: #fbbf24;">AUDIO</span>
+                        </button>
+                    </div>
+                    <button id="btnFakeCall" style="display: none;"></button>
+
+                    <!-- 3. Safe Journey Share Button -->
+                    <button id="btnEmergencyShareTrip" class="action-btn-large bg-blue">
+                        <span style="font-size: 26px;">📲</span>
+                        <div style="text-align: left;">
+                            <strong style="font-size: 13px; display: block; color: white;">SHARE LIVE SAFE JOURNEY</strong>
+                            <span style="font-size: 10px; color: #bfdbfe;">Generate tracking link with calculated safety score & ETA</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Nearest Response Infrastructure -->
+                <div class="glass-box" style="padding: 12px 14px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 11px; font-weight: 800; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; display: block;">
+                            Immediate Emergency Dispatch Units
+                        </span>
+                        <span id="emergencyCorridorBadge" class="badge-micro badge-verified" style="font-size: 9px;">Path Corridor Proximity</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="emergency-unit-tile">
+                            <div>
+                                <span style="font-size: 10px; color: #93c5fd; font-weight: 700;">👮 NEAREST POLICE (ALONG ROUTE):</span>
+                                <div id="emergencyPoliceName" style="font-size: 11.5px; font-weight: 700; color: white;">Calculating nearest station...</div>
+                                <span id="emergencyPoliceDist" style="font-size: 10px; color: #94a3b8;">Distance: --</span>
+                            </div>
+                            <a id="emergencyPolicePhoneLink" href="tel:112" class="btn-call-mini">📞 Call</a>
+                        </div>
+                        <div class="emergency-unit-tile">
+                            <div>
+                                <span style="font-size: 10px; color: #6ee7b7; font-weight: 700;">🏥 NEAREST SAFE HAVEN (ALONG ROUTE):</span>
+                                <div id="emergencyHospitalName" style="font-size: 11.5px; font-weight: 700; color: white;">Calculating nearest hospital...</div>
+                                <span id="emergencyHospitalDist" style="font-size: 10px; color: #94a3b8;">Distance: --</span>
+                            </div>
+                            <a id="emergencyHospitalPhoneLink" href="tel:108" class="btn-call-mini">📞 Call</a>
+                        </div>
+                    </div>
+
+                    <!-- All Route Corridor Units (Origin ➔ Destination) -->
+                    <div id="emergencyCorridorSection" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">🛣️ Units Along Active Route Path</span>
+                            <span id="emergencyCorridorCount" style="font-size: 9.5px; color: #60a5fa; font-weight: 700;"></span>
+                        </div>
+                        <div id="emergencyCorridorList" style="display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Speed Dial Helplines -->
+                <div class="glass-box" style="padding: 10px 14px; font-size: 10px; color: #94a3b8; line-height: 1.5;">
+                    <strong style="color: #cbd5e1; display: block; margin-bottom: 4px;">Trichy 24/7 Helplines:</strong>
+                    Police Control: <strong style="color: white;">112 / 100</strong> • 
+                    Ambulance: <strong style="color: white;">108</strong> • 
+                    Women Helpline: <strong style="color: white;">1091 / 181</strong> • 
+                    Cyber Crime: <strong style="color: white;">1930</strong>
+                </div>
+
+            </div>
+
+            <!-- ==================================================== -->
+            <!-- TAB 5: 📍 NEARBY SUPPORT & CONTEXT                   -->
+            <!-- ==================================================== -->
+            <div id="pane-nearby" class="tab-pane">
+                
+                <div class="pane-header-box">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 20px;">📍</span>
+                        <div>
+                            <h3 class="pane-title-text">Nearby Support & Context POIs</h3>
+                            <p class="pane-subtitle-text">Verified public safety hubs, safe havens, and environmental landmarks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🛡️ NEARBY SUPPORT & CONTEXT Cards -->
+                <div id="nearbySupportCard" class="glass-box" style="padding: 12px 14px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size: 11px; font-weight: 800; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">Nearest Support (Along Route)</span>
+                        <span id="nearbyCorridorBadge" class="badge-micro badge-verified">Active Route Path</span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Nearest Police -->
+                        <div class="support-item-box police-box">
+                            <div class="support-item-header">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span>👮</span>
+                                    <strong id="supportPoliceName" style="color: #93c5fd; font-size: 11.5px;">Calculating...</strong>
+                                </div>
+                                <span id="supportPoliceDist" class="support-dist-badge">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                <span id="supportPolicePhone" style="font-size: 10px; color: #94a3b8;">📞 --</span>
+                                <button type="button" class="btn-view-map" onclick="window.appController.focusNearbySupport('police')">VIEW ON MAP</button>
+                            </div>
+                        </div>
+
+                        <!-- Nearest Hospital / Safe Haven -->
+                        <div class="support-item-box hospital-box">
+                            <div class="support-item-header">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span>🏥</span>
+                                    <strong id="supportHospitalName" style="color: #6ee7b7; font-size: 11.5px;">Calculating...</strong>
+                                </div>
+                                <span id="supportHospitalDist" class="support-dist-badge">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                <span id="supportHospitalPhone" style="font-size: 10px; color: #94a3b8;">📞 --</span>
+                                <button type="button" class="btn-view-map" onclick="window.appController.focusNearbySupport('hospital')">VIEW ON MAP</button>
+                            </div>
+                        </div>
+
+                        <!-- Nearest TASMAC / Liquor Outlet -->
+                        <div class="support-item-box liquor-box">
+                            <div class="support-item-header">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span>🍺</span>
+                                    <strong id="supportLiquorName" style="color: #fde68a; font-size: 11.5px;">Calculating...</strong>
+                                </div>
+                                <span id="supportLiquorDist" class="support-dist-badge">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                <span id="supportLiquorHours" style="font-size: 10px; color: #94a3b8;">🕒 12:00 PM - 10:00 PM</span>
+                                <button type="button" class="btn-view-map" onclick="window.appController.focusNearbySupport('liquor')">VIEW ON MAP</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- All Safety Units Along Origin ➔ Destination Route -->
+                    <div id="nearbyCorridorUnitsSection" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 10.5px; font-weight: 800; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">
+                                🛡️ All Safety Units Along Route Path
+                            </span>
+                            <span id="nearbyCorridorCount" style="font-size: 9.5px; color: #34d399; font-weight: 700;"></span>
+                        </div>
+                        <div id="nearbyCorridorUnitsList" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto;">
+                        </div>
+                    </div>
+
+                    <!-- Situational Awareness Disclaimer -->
+                    <div class="support-context-disclaimer" style="margin-top: 10px;">
+                        ℹ️ <strong>Situational Environmental Notice:</strong> Nearby environmental factors are shown for situational awareness. The presence of a licensed retail outlet is an environmental context factor and does not designate an area as dangerous.
+                    </div>
+                </div>
+
+                <!-- Layer Toggles -->
+                <div class="glass-box" style="padding: 10px 14px;">
+                    <label class="field-label" style="margin-bottom: 8px;">Map Safety Layers</label>
+                    <div class="grid-2" style="font-size: 11px; font-weight: 600; color: #cbd5e1;">
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" id="toggleLights" checked> 💡 Streetlights
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" id="togglePolice" checked> 👮 Police Hubs
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" id="toggleHavens" checked> 🏥 Safe Havens
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" id="toggleLiquor" checked> 🍺 Liquor Retail
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" id="toggleHazards" checked> ⚠️ Hazard Pins
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ==================================================== -->
+            <!-- TAB 6: ⚠️ REPORT HAZARD                              -->
+            <!-- ==================================================== -->
+            <div id="pane-report" class="tab-pane">
+                
+                <div class="pane-header-box">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 20px;">⚠️</span>
+                        <div>
+                            <h3 class="pane-title-text">Community Hazard Reporting</h3>
+                            <p class="pane-subtitle-text">Report street hazards into persistent SQLite storage to dynamically update routing.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hazard Location Selection -->
+                <div class="glass-box" style="padding: 12px 14px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label class="field-label" style="margin-bottom: 0;">Pin Location Coordinates</label>
+                        <span id="hazardReportFormCoord" style="font-size: 10px; font-family: monospace; color: #38bdf8;">10.8200° N, 78.6920° E</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 6px;">
+                        <button type="button" id="btnHazardUseGPS" class="btn-secondary-head" style="flex: 1; font-size: 10.5px;">
+                            📍 Use My GPS
+                        </button>
+                        <button type="button" id="btnHazardPickMap" class="btn-secondary-head" style="flex: 1; font-size: 10.5px;">
+                            🗺️ Click on Map
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hazard Category -->
+                <div class="field-group">
+                    <label class="field-label">Hazard Category</label>
+                    <select id="hazardCategorySelect" class="app-select">
+                        <option value="Broken Streetlight">💡 Broken Streetlight / Pitch Dark Area</option>
+                        <option value="Harassment / Isolated Area">👥 Harassment / Suspicious Gathering</option>
+                        <option value="Aggressive Stray Animals">🐕 Aggressive Stray Dogs</option>
+                        <option value="Narrow Unlit Alley">🚪 Dark / Isolated Alley</option>
+                        <option value="Road Blockage / Flooding">🌊 Waterlogging / Road Hazard</option>
+                    </select>
+                </div>
+
+                <!-- Hazard Description -->
+                <div class="field-group">
+                    <label class="field-label">Context / Description (Optional)</label>
+                    <textarea id="hazardDescInput" rows="3" class="app-input" placeholder="e.g. Streetlight pole broken near junction, completely dark after 8 PM"></textarea>
+                </div>
+
+                <!-- SQLite & Corroboration Notice -->
+                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 10.5px; color: #fde68a; line-height: 1.45; margin-bottom: 14px;">
+                    🛡️ <strong>SQLite Persistence & Anti-Tamper Policy:</strong> Reports are saved to persistent SQLite database (<code>safepath.db</code>). Initial reports receive medium confidence (65%); independent corroboration increases confidence to prevent single-report tampering.
+                </div>
+
+                <!-- Submit Button -->
+                <button type="button" id="btnSubmitHazard" class="btn-primary-action" style="width: 100%; background: #dc2626; margin-bottom: 8px;">
+                    ⚠️ SAVE TO DATABASE & RECALCULATE ROUTES
+                </button>
+                
+                <!-- Legacy modal cancel trigger compatibility -->
+                <button id="btnReportHazard" style="display: none;"></button>
+                <button id="btnCancelHazard" style="display: none;"></button>
+
+                <p style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 6px;">
+                    💡 Submitting recalculates Dijkstra traversal costs in real-time, steering travelers away from newly flagged hazards.
+                </p>
+
+            </div>
+
+            <!-- Sidebar Privacy Footer -->
+            <div class="sidebar-privacy-footer">
+                <p>Privacy: Location is processed exclusively for navigation & safety routing. SafePath minimizes unnecessary storage of user location data.</p>
+            </div>
+
+        </aside>
+
+        <!-- Sidebar Collapse / Expand Toggle Button -->
+        <button id="btnToggleSidebar" class="sidebar-toggle-tab" title="Collapse Sidebar for Fullscreen Map">
+            ‹
+        </button>
+
+        <!-- ======================================================== -->
+        <!-- 3. MAIN MAP VIEWPORT                                     -->
+        <!-- ======================================================== -->
+        <main class="map-viewport" id="mapViewport">
+            <div id="map"></div>
+
+            <!-- 🗺️ Floating Collapsible Map Layers Control -->
+            <div class="map-floating-layers-wrapper" id="layersDropdownWrapper">
+                <button id="btnLayersDropdown" class="btn-floating-layers" title="Toggle Map Safety Layers">
+                    <span>🗺️</span>
+                    <span>Layers</span>
+                    <span style="font-size: 9px; margin-left: 2px;">▾</span>
+                </button>
+                <div id="layersDropdownMenu" class="layers-dropdown-panel hidden">
+                    <div class="layers-panel-header">MAP SAFETY LAYERS</div>
+                    <label class="layer-chk-item">
+                        <input type="checkbox" id="chkLayerLights" checked> 💡 Streetlights
+                    </label>
+                    <label class="layer-chk-item">
+                        <input type="checkbox" id="chkLayerPolice" checked> 👮 Police Hubs
+                    </label>
+                    <label class="layer-chk-item">
+                        <input type="checkbox" id="chkLayerHavens" checked> 🏥 Safe Havens
+                    </label>
+                    <label class="layer-chk-item">
+                        <input type="checkbox" id="chkLayerLiquor" checked> 🍺 TASMAC / Liquor
+                    </label>
+                    <label class="layer-chk-item">
+                        <input type="checkbox" id="chkLayerHazards" checked> ⚠️ Hazard Pins
+                    </label>
+                </div>
+            </div>
+
+            <!-- 🔍 Quick Map POI Filter Control Bar -->
+            <div class="map-poi-filter-bar">
+                <span class="poi-filter-label">QUICK</span>
+                <button id="filterBtnPolice" class="poi-filter-btn active" data-layer="police" title="Toggle Police Stations">
+                    <span>👮</span> Police
+                </button>
+                <button id="filterBtnHospitals" class="poi-filter-btn active" data-layer="safeHavens" title="Toggle Hospitals & Safe Havens">
+                    <span>🏥</span> Hospitals
+                </button>
+                <button id="filterBtnLiquor" class="poi-filter-btn active" data-layer="liquor" title="Toggle TASMAC / Liquor Retail Outlets">
+                    <span>🍺</span> TASMAC
+                </button>
+                <button id="filterBtnHazards" class="poi-filter-btn active" data-layer="hazards" title="Toggle Hazard Pins">
+                    <span>⚠️</span> Hazards
+                </button>
+                <button id="filterBtnDebug" class="poi-filter-btn" data-layer="debugGeometry" title="Toggle Debug Route Geometry (Nodes, Edges & Vertices)">
+                    <span>🛠️</span> Debug
+                </button>
+            </div>
+
+            <!-- 🗺️ Floating Multi-View Map Switcher -->
+            <div class="map-view-switcher">
+                <span class="map-view-label">VIEW</span>
+                <button class="map-view-btn active" data-view="google-streets" title="Accurate Google Maps Streets (Trichy)">
+                    <span>🗺️</span> Streets
+                </button>
+                <button class="map-view-btn" data-view="google-hybrid" title="High-Res Satellite with Road Names & Landmarks">
+                    <span>🛰️</span> Satellite
+                </button>
+                <button class="map-view-btn" data-view="google-sat" title="Pure Satellite Photography">
+                    <span>🌍</span> Pure Sat
+                </button>
+                <button class="map-view-btn" data-view="dark-night" title="Dark Safety Corridors Mode">
+                    <span>🌙</span> Night
+                </button>
+                <button class="map-view-btn" data-view="google-terrain" title="Topographic Elevation & Contours">
+                    <span>🏔️</span> Terrain
+                </button>
+            </div>
+
+            <!-- 📍 Floating Live Location (GPS) Button -->
+            <div class="map-floating-controls">
+                <button id="btnLocateMe" class="btn-floating-gps" title="Find My Live Location (GPS)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 2v3m0 14v3M2 12h3m14 0h3"></path>
+                    </svg>
+                    <span id="gpsStatusText" class="gps-label">Live GPS</span>
+                </button>
+            </div>
+
+            <!-- Floating Map Legend -->
+            <div class="floating-map-legend">
+                <div class="legend-header-title">MAP SAFETY & CONTEXT</div>
+                <div class="legend-items-grid">
+                    <span><span class="legend-dot" style="background:#10b981;"></span> Safest Route</span>
+                    <span><span class="legend-dot" style="background:#f59e0b;"></span> Balanced</span>
+                    <span><span class="legend-dot" style="background:#ef4444;"></span> Fastest</span>
+                    <span><span class="legend-icon">👮</span> Police / Emergency</span>
+                    <span><span class="legend-icon">🏥</span> Hospital / Safe Haven</span>
+                    <span><span class="legend-icon">🍺</span> Liquor Retail / TASMAC</span>
+                    <span><span class="legend-dot" style="background:#dc2626;"></span> Hazard (SQLite)</span>
+                    <span><span class="legend-dot" style="background:#38bdf8;"></span> Live Location</span>
+                    <span><span class="legend-dot" style="background:#a855f7;"></span> Debug Graph</span>
+                </div>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- 🧭 GOOGLE MAPS NAVIGATION FLOATING OVERLAYS               -->
+            <!-- ======================================================== -->
+
+            <!-- 1. Top Turn-by-Turn Banner (Google Maps Emerald Green Header) -->
+            <div id="googleNavTopBanner" class="gnav-top-banner hidden">
+                <div class="gnav-maneuver-box" id="gNavManeuverBox">
+                    <span id="gNavManeuverIcon" class="gnav-maneuver-icon">⬆️</span>
+                </div>
+                <div class="gnav-instruction-col">
+                    <div class="gnav-distance-turn" id="gNavDistanceToTurn">In 350 m</div>
+                    <div class="gnav-street-name" id="gNavNextStreet">Head north toward corridor</div>
+                    <div class="gnav-next-preview" id="gNavThenStreet">Then proceed toward destination</div>
+                </div>
+                <div class="gnav-top-actions">
+                    <span id="gNavSafetyBadge" class="gnav-chip-safety">🛡️ 94% Safe</span>
+                    <button id="btnGNavMute" class="btn-gnav-icon" type="button" title="Mute/Unmute Voice Guidance" onclick="window.appController.toggleVoiceMute()">
+                        <span id="gNavMuteIcon">🔊</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. Floating Re-Center Button (Appears when map is dragged away from user) -->
+            <button id="btnGNavRecenterFloating" class="btn-gnav-recenter hidden" type="button" onclick="window.appController.recenterNavigation()">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                </svg>
+                <span>Re-center</span>
+            </button>
+
+            <!-- 3. Bottom Navigation Card HUD (Google Maps Nav Bar) -->
+            <div id="googleNavBottomCard" class="gnav-bottom-card hidden">
+                <div class="gnav-bottom-header">
+                    <div class="gnav-eta-group">
+                        <span id="gNavETA" class="gnav-eta">--:--</span>
+                        <span class="gnav-separator">•</span>
+                        <span id="gNavTimeRemaining" class="gnav-time">-- min</span>
+                        <span class="gnav-separator">•</span>
+                        <span id="gNavDistRemaining" class="gnav-dist">-- km</span>
+                    </div>
+                    <div class="gnav-safety-pill" id="gNavCorridorStatus">
+                        <span class="live-dot animate-pulse"></span>
+                        <span id="gNavCorridorText">Illuminated Safe Corridor</span>
+                    </div>
+                </div>
+
+                <!-- Animated Progress Line -->
+                <div class="gnav-progress-track">
+                    <div id="gNavProgressBar" class="gnav-progress-fill" style="width: 0%;"></div>
+                </div>
+
+                <div class="gnav-bottom-actions">
+                    <!-- Speed Simulation Control -->
+                    <button id="btnGNavSpeed" class="btn-gnav-chip" type="button" onclick="window.appController.cycleNavSpeed()" title="Change Navigation Simulation Speed">
+                        <span>⏩</span> <span id="gNavSpeedLabel">1x</span>
+                    </button>
+
+                    <!-- Pause / Resume Motion -->
+                    <button id="btnGNavPause" class="btn-gnav-chip" type="button" onclick="window.appController.toggleNavPause()" title="Pause / Resume Motion">
+                        <span id="gNavPauseIcon">⏸️</span>
+                    </button>
+
+                    <!-- Turn-by-Turn Steps Sheet Trigger -->
+                    <button id="btnGNavSteps" class="btn-gnav-chip" type="button" onclick="window.appController.toggleNavStepsSheet()" title="View Route Directions List">
+                        <span>📋</span> Steps
+                    </button>
+
+                    <!-- Quick Emergency SOS -->
+                    <button id="btnGNavSOS" class="btn-gnav-chip gnav-sos-chip" type="button" onclick="window.appController.triggerSOSModal()" title="1-Tap SOS Emergency">
+                        <span>🚨</span> SOS
+                    </button>
+
+                    <!-- Exit Navigation Button (Google Maps Signature Red Circle with X) -->
+                    <button id="btnGNavExit" class="btn-gnav-exit" type="button" onclick="window.appController.stopGoogleNavigation()" title="Exit Navigation">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. Turn-by-Turn Steps Sheet (Google Maps Directions List Drawer) -->
+            <div id="googleNavStepsDrawer" class="gnav-steps-drawer hidden">
+                <div class="gnav-drawer-header">
+                    <div>
+                        <div style="font-size: 13px; font-weight: 800; color: white;">Turn-by-turn directions</div>
+                        <span id="gNavDrawerSummary" style="font-size: 10.5px; color: #94a3b8;">-- km • -- mins • Safest Route</span>
+                    </div>
+                    <button class="btn-close-drawer" type="button" onclick="window.appController.toggleNavStepsSheet(false)">✕</button>
+                </div>
+                <div id="gNavStepsList" class="gnav-steps-list">
+                    <!-- Populated dynamically with all turn-by-turn steps -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 4. MOBILE BOTTOM NAVIGATION BAR                          -->
+    <!-- ======================================================== -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile Navigation">
+        <button class="mobile-nav-btn active" data-tab="navigate">
+            <span class="mobile-icon">🗺️</span>
+            <span class="mobile-label">Navigate</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="safety">
+            <span class="mobile-icon">🧠</span>
+            <span class="mobile-label">Safety</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="emergency">
+            <span class="mobile-icon">🚨</span>
+            <span class="mobile-label">SOS</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="nearby">
+            <span class="mobile-icon">📍</span>
+            <span class="mobile-label">Nearby</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="report">
+            <span class="mobile-icon">⚠️</span>
+            <span class="mobile-label">Report</span>
+        </button>
+    </nav>
+
+    <!-- ======================================================== -->
+    <!-- 5. MODALS & POPUPS                                       -->
+    <!-- ======================================================== -->
+
+    <!-- 📞 Fake Call Incoming Modal -->
+    <div id="fakeCallIncomingModal" class="modal-overlay hidden">
+        <div class="phone-dialog-card">
+            <div>
+                <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #34d399; letter-spacing: 1px;">
+                    ● Simulated Safety Deterrent Call
+                </div>
+                <h3 id="fakeCallIncomingCaller" style="font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 4px;">Dad ❤️</h3>
+                <div id="fakeCallIncomingNumber" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Mobile +91 94431-02938</div>
+                <div id="fakeCallIncomingAudioBadge" style="margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3);">
+                    <span id="fakeCallIncomingAudioIcon">🎙️</span>
+                    <span id="fakeCallIncomingAudioText">Custom Record Ready</span>
+                </div>
+            </div>
+
+            <div id="fakeCallIncomingAvatar" class="avatar-circle">👨</div>
+
+            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.4;">
+                Answer to trigger synthetic caller dialogue or custom recording to deter suspicious individuals while walking.
+            </div>
+
+            <div class="phone-action-row">
+                <button id="btnDeclineCall" class="btn-phone-circle btn-phone-decline" title="Decline Call">✕</button>
+                <button id="btnAcceptCall" class="btn-phone-circle btn-phone-accept" title="Accept Call">📞</button>
+            </div>
+
+            <div style="margin-top: -4px;">
+                <button id="btnOpenFakeCallConfigFromIncoming" style="background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; text-decoration: underline;">
+                    ⚙️ Voice & Caller Setup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📞 Fake Call Active Modal -->
+    <div id="fakeCallActiveModal" class="modal-overlay hidden">
+        <div class="phone-dialog-card">
+            <div>
+                <div id="fakeCallStatus" style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #34d399;">
+                    ● 00:08 Connected (Speaker On)
+                </div>
+                <h3 id="fakeCallActiveCaller" style="font-size: 20px; font-weight: 800; color: #ffffff; margin-top: 4px;">Dad ❤️</h3>
+            </div>
+
+            <div id="fakeCallActiveAvatar" class="avatar-circle" style="border-color: #34d399;">👨</div>
+
+            <div id="fakeCallActiveScriptBox" style="background: #1f2937; padding: 12px; border-radius: 14px; font-size: 11.5px; color: #e2e8f0; text-align: left; border: 1px solid rgba(255,255,255,0.08); line-height: 1.5;">
+                <div id="fakeCallActiveAudioHeader" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <strong id="fakeCallActiveAudioModeLabel" style="color: #34d399; font-size: 11px; display: flex; align-items: center; gap: 4px;">
+                        <span>🎙️</span> <span id="fakeCallActiveHeaderTitle">Custom Audio Playing:</span>
+                    </strong>
+                    <span id="fakeCallWaveAnimation" class="sound-wave-anim">
+                        <span></span><span></span><span></span><span></span>
+                    </span>
+                </div>
+                <div id="fakeCallActiveScriptText">
+                    "Hey! I am standing right near the well-lit junction in Thillai Nagar. Where are you? Stay on the main road, I can see the streetlights. Keep walking towards me, I'm waiting outside for you!"
+                </div>
+            </div>
+
+            <div>
+                <button id="btnEndCallActive" class="btn-phone-circle btn-phone-decline" style="margin: 0 auto;">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🎙️ Fake Call Voice & Caller Setup Modal -->
+    <div id="fakeCallConfigModal" class="modal-overlay hidden">
+        <div class="modal-content-box" style="max-width: 480px; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                <div>
+                    <h3 style="font-size: 15px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 6px;">
+                        <span>🎙️</span> Fake Call Voice & Caller Setup
+                    </h3>
+                    <p style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Configure Dad's profile and custom voice recording</p>
+                </div>
+                <button id="btnCloseFakeCallConfig" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+            </div>
+
+            <!-- Caller Profile -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <label style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">1. Caller Profile</label>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 2;">
+                        <span style="font-size: 10px; color: #94a3b8;">Caller Name:</span>
+                        <input id="inputFakeCallerName" type="text" class="app-input" value="Dad ❤️" placeholder="Dad ❤️" style="width: 100%; margin-top: 2px;">
+                    </div>
+                    <div style="flex: 2;">
+                        <span style="font-size: 10px; color: #94a3b8;">Phone Number:</span>
+                        <input id="inputFakeCallerNumber" type="text" class="app-input" value="+91 94431-02938" placeholder="+91 94431-02938" style="width: 100%; margin-top: 2px;">
+                    </div>
+                </div>
+                <div>
+                    <span style="font-size: 10px; color: #94a3b8; display: block; margin-bottom: 4px;">Caller Avatar:</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="avatar-opt-btn active" data-avatar="👨" title="Dad">👨 Dad</button>
+                        <button type="button" class="avatar-opt-btn" data-avatar="👨‍🦳" title="Senior Dad">👨‍🦳</button>
+                        <button type="button" class="avatar-opt-btn" data-avatar="👮" title="Police Officer">👮</button>
+                        <button type="button" class="avatar-opt-btn" data-avatar="👩" title="Mom">👩</button>
+                        <button type="button" class="avatar-opt-btn" data-avatar="🧑" title="Friend">🧑</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Deterrent Mode -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <label style="font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">2. Audio Deterrent Source</label>
+                
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Option A: Custom Audio -->
+                    <div id="cardAudioModeCustom" class="audio-source-card active">
+                        <input type="radio" id="radioAudioCustom" name="fakeAudioMode" value="custom" checked style="margin-top: 3px;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <strong style="font-size: 12px; color: #ffffff;">🎙️ Custom Audio Recording (Recommended)</strong>
+                                <span id="customAudioBadgeState" style="font-size: 9.5px; font-weight: 700; color: #34d399; background: rgba(52, 211, 153, 0.15); padding: 2px 6px; border-radius: 6px;">READY</span>
+                            </div>
+                            <p style="font-size: 10.5px; color: #94a3b8; margin-top: 2px; line-height: 1.4;">
+                                Plays your own recorded voice or uploaded audio note (Dad speaking) when you accept the fake call.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Option B: AI Synthetic Voice -->
+                    <div id="cardAudioModeAI" class="audio-source-card">
+                        <input type="radio" id="radioAudioAI" name="fakeAudioMode" value="ai" style="margin-top: 3px;">
+                        <div style="flex: 1;">
+                            <strong style="font-size: 12px; color: #ffffff;">🗣️ Dad's AI Synthesized Voice</strong>
+                            <p style="font-size: 10.5px; color: #94a3b8; margin-top: 2px; line-height: 1.4;">
+                                Browser generates realistic speech: <em>"Hey! It's Dad. I am standing near the junction... Keep walking towards me!"</em>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Recording & Upload Panel -->
+            <div id="customAudioControlPanel" style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 11.5px; color: #fbbf24;">🎙️ Manage Custom Voice Recording</strong>
+                    <span id="recordingStatusBadge" style="font-size: 10px; color: #94a3b8;">Max 60 seconds</span>
+                </div>
+
+                <!-- Live Mic Recording -->
+                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.04); padding: 10px 12px; border-radius: 8px;">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: #ffffff;">Record with Microphone:</div>
+                        <span id="micStatusText" style="font-size: 10px; color: #94a3b8;">Click record and speak Dad's dialogue</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span id="micTimerDisplay" style="display: none; font-size: 11px; font-weight: 800; color: #ef4444;" class="rec-pulsing-dot-container">
+                            <span class="rec-pulsing-dot"></span> <span id="micTimerSec">00:00</span>
+                        </span>
+                        <button id="btnStartMicRecord" type="button" class="btn-rec-action" style="background: #ef4444; color: white;">
+                            🎤 Record
+                        </button>
+                        <button id="btnStopMicRecord" type="button" class="btn-rec-action" style="background: #e2e8f0; color: #0f172a; display: none;">
+                            ⏹️ Stop
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Upload -->
+                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.04); padding: 10px 12px; border-radius: 8px;">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: #ffffff;">Upload Audio File:</div>
+                        <span style="font-size: 10px; color: #94a3b8;">Supports .mp3, .wav, .m4a, .ogg (under 8MB)</span>
+                    </div>
+                    <div>
+                        <input type="file" id="inputAudioFile" accept="audio/*" style="display: none;">
+                        <button id="btnTriggerAudioUpload" type="button" class="btn-rec-action" style="background: #3b82f6; color: white;">
+                            📁 Choose File
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Saved Custom Audio Info & Preview -->
+                <div id="savedAudioBox" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px;">
+                        <div id="savedAudioTitle" style="font-size: 11px; font-weight: 700; color: #34d399;">Dad's Voice Recording.webm</div>
+                        <span id="savedAudioSubtitle" style="font-size: 10px; color: #cbd5e1;">Duration: ~15s (Saved to browser)</span>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button id="btnTestPlaySavedAudio" type="button" class="btn-rec-action" style="background: #10b981; color: white;">
+                            ▶️ Test Play
+                        </button>
+                        <button id="btnDeleteSavedAudio" type="button" class="btn-rec-action" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);" title="Delete custom recording">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Voice Script Preview & Test -->
+            <div id="aiVoiceControlPanel" style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 11.5px; color: #93c5fd;">🗣️ Dad's AI Speech Dialogue Preview</strong>
+                    <button id="btnTestAIVoice" type="button" class="btn-rec-action" style="background: #2563eb; color: white;">
+                        🔊 Test Speech
+                    </button>
+                </div>
+                <div style="font-size: 11px; color: #cbd5e1; background: rgba(255, 255, 255, 0.04); padding: 8px 10px; border-radius: 6px; font-style: italic; line-height: 1.4;">
+                    "Hey! It's Dad. I am standing right near the well-lit junction in Thillai Nagar. Where are you? Stay on the main road, I can see the streetlights. Keep walking towards me, I'm waiting outside for you!"
+                </div>
+            </div>
+
+            <!-- Footer Action Buttons -->
+            <div style="display: flex; gap: 10px; margin-top: 4px;">
+                <button id="btnSaveFakeCallSettings" type="button" style="flex: 1; padding: 12px; background: #10b981; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                    💾 Save & Apply
+                </button>
+                <button id="btnTestTriggerFakeCall" type="button" style="flex: 1; padding: 12px; background: #f59e0b; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                    📞 Test Call Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🚨 Smart Emergency SOS Modal -->
+    <div id="sosModal" class="modal-overlay hidden">
+        <div class="modal-content-box sos-box" style="text-align: center;">
+            <div style="font-size: 40px;">🚨</div>
+            <h2 style="font-size: 20px; font-weight: 900; color: #ffffff; margin-top: -6px;">EMERGENCY SOS TRIGGERED</h2>
+            <p style="font-size: 11px; color: #fecaca;">High-decibel emergency siren activated & emergency payload formatted.</p>
+
+            <div style="background: rgba(0,0,0,0.5); padding: 14px; border-radius: 12px; text-align: left; font-size: 11px; color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: #34d399;">● Nearest Emergency Infrastructure (Trichy):</strong>
+                    <span id="sosTimestamp" style="color: #94a3b8; font-size: 10px;"></span>
+                </div>
+                
+                <div style="background: rgba(59, 130, 246, 0.15); padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.3);">
+                    <div style="font-weight: 700; color: #93c5fd;">👮 Nearest Police Station:</div>
+                    <div id="sosPoliceInfo" style="color: #ffffff; font-weight: 600;">Cantonment Police Station (24/7 Control)</div>
+                </div>
+
+                <div style="background: rgba(16, 185, 129, 0.15); padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <div style="font-weight: 700; color: #6ee7b7;">🏥 Nearest 24/7 Safe Haven Hospital:</div>
+                    <div id="sosHospitalInfo" style="color: #ffffff; font-weight: 600;">Mahatma Gandhi Govt Hospital (GH Trichy)</div>
+                </div>
+
+                <div>
+                    <span style="font-size: 10px; color: #94a3b8;">Emergency SMS / WhatsApp Payload:</span>
+                    <p id="sosDetailsText" style="line-height: 1.4; font-family: monospace; font-size: 10px; background: rgba(0,0,0,0.6); padding: 6px; border-radius: 6px; margin-top: 4px; word-break: break-all;"></p>
+                </div>
+                
+                <div style="color: #34d399; font-weight: 700; font-size: 10.5px;">✓ Emergency broadcast payload copied to clipboard.</div>
+            </div>
+
+            <button id="btnCloseSOS" style="width: 100%; padding: 12px; background: white; color: #111827; border: none; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; margin-top: 10px;">
+                I Am Safe / Silence Alarm
+            </button>
+        </div>
+    </div>
+
+    <!-- 📍 Report Hazard Pin Modal (For direct map-click trigger) -->
+    <div id="hazardModal" class="modal-overlay hidden">
+        <div class="modal-content-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">⚠️ Drop Community Safety Pin</h3>
+                <span id="hazardCoordText" style="font-size: 10px; color: #94a3b8;"></span>
+            </div>
+
+            <div class="field-group">
+                <label class="field-label">Hazard Category</label>
+                <select id="modalHazardCategorySelect" class="app-select">
+                    <option value="Broken Streetlight">💡 Broken Streetlight / Pitch Dark Area</option>
+                    <option value="Harassment / Isolated Area">👥 Harassment / Suspicious Gathering</option>
+                    <option value="Aggressive Stray Animals">🐕 Aggressive Stray Dogs</option>
+                    <option value="Narrow Unlit Alley">🚪 Dark / Isolated Alley</option>
+                    <option value="Road Blockage / Flooding">🌊 Waterlogging / Road Hazard</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label class="field-label">Context / Description (Optional)</label>
+                <textarea id="modalHazardDescInput" rows="3" class="app-input" placeholder="e.g. Light pole broken near junction, completely dark after 8 PM"></textarea>
+            </div>
+
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 8px 10px; font-size: 10.5px; color: #fde68a;">
+                🛡️ <strong>Corroboration Policy:</strong> Saved to persistent database. Initial reports receive medium confidence (65%); independent corroboration increases confidence to prevent single-report tampering.
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+                <button id="btnCancelModalHazard" style="padding: 8px 14px; background: #374151; color: white; border: none; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                    Cancel
+                </button>
+                <button id="btnSubmitModalHazard" style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">
+                    Save to DB & Recalculate
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📋 Data Source Transparency Modal -->
+    <div id="dataSourcesModal" class="modal-overlay hidden">
+        <div class="modal-content-box" style="max-width: 620px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">📋</span>
+                    <h3 style="font-size: 15px; font-weight: 800; color: #ffffff;">Data Sources & Transparency Matrix</h3>
+                </div>
+                <button id="btnCloseDataSources" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">✕</button>
+            </div>
+
+            <p style="font-size: 11.5px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.5;">
+                In accordance with <strong>Human-Centered AI (HCA-05)</strong> principles, SafePath AI explicitly categorizes all underlying data streams:
+            </p>
+
+            <table class="data-source-table">
+                <thead>
+                    <tr>
+                        <th>Data Stream</th>
+                        <th>Classification</th>
+                        <th>Primary Provider</th>
+                        <th>Update Cadence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Road Network & Geography</strong></td>
+                        <td><span class="badge-source badge-live">LIVE BASEMAP</span></td>
+                        <td>Google Maps & OpenStreetMap</td>
+                        <td>Continuous Tile Server</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Environmental & Weather</strong></td>
+                        <td><span class="badge-source badge-live">LIVE SATELLITE</span></td>
+                        <td>Open-Meteo API (Trichy 10.79°N, 78.70°E)</td>
+                        <td>10-Minute Server Cache</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Police Precincts & Support Hubs</strong></td>
+                        <td><span class="badge-source badge-verified">VERIFIED</span></td>
+                        <td>Tamil Nadu Police & Trichy City Police</td>
+                        <td>Curated Official Registry</td>
+                    </tr>
+                    <tr>
+                        <td><strong>24/7 Safe Haven Hospitals</strong></td>
+                        <td><span class="badge-source badge-verified">VERIFIED</span></td>
+                        <td>Govt Hospital (GH) & Kauvery / Apollo</td>
+                        <td>24/7 Emergency Verification</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Licensed Retail Outlets (TASMAC)</strong></td>
+                        <td><span class="badge-source badge-curated">CURATED GIS</span></td>
+                        <td>State Retail Outlet Registry</td>
+                        <td>Environmental Context Layer</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Community Hazard Pins</strong></td>
+                        <td><span class="badge-source badge-estimated">CORROBORATED</span></td>
+                        <td>SafePath Citizen Reports (SQLite)</td>
+                        <td>Real-Time Dynamic Storage</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 14px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 10px; border-radius: 8px; font-size: 11px; color: #a7f3d0; line-height: 1.45;">
+                <strong>Responsible AI Guarantee:</strong> SafePath AI avoids black-box decisions. It computes an algorithmic safety estimate and explicitly communicates the justification and confidence of every recommended route.
+            </div>
+
+            <div style="text-align: right; margin-top: 12px;">
+                <button id="btnCloseDataSourcesBottom" style="padding: 8px 18px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🌤️ Weather Details Modal -->
+    <div id="weatherModal" class="modal-overlay hidden">
+        <div class="modal-content-box" style="max-width: 480px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 22px;">🌤️</span>
+                    <div>
+                        <h3 style="font-size: 15px; font-weight: 800; color: #ffffff;">Trichy Live Weather Telemetry</h3>
+                        <span style="font-size: 10px; color: #94a3b8;">Coordinates: 10.7905° N, 78.7047° E</span>
+                    </div>
+                </div>
+                <button id="btnCloseWeatherModal" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">✕</button>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.04); padding: 14px 18px; border-radius: 12px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="modalWeatherIcon" style="font-size: 36px;">🌤️</span>
+                    <div>
+                        <div id="modalWeatherTemp" style="font-size: 26px; font-weight: 800; color: #ffffff;">31.5°C</div>
+                        <div id="modalWeatherCondition" style="font-size: 12px; color: #cbd5e1;">Clear Sky</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="badge-micro badge-live">LIVE FEED</span>
+                    <span style="font-size: 10px; color: #94a3b8; display: block; margin-top: 4px;">Open-Meteo API</span>
+                </div>
+            </div>
+
+            <!-- Weather Details Grid -->
+            <div class="grid-2" style="gap: 8px; margin-bottom: 12px;">
+                <div class="sub-metric-tile">
+                    <span class="sub-metric-label">💧 Relative Humidity</span>
+                    <span id="modalWeatherHumidity" class="sub-metric-val">68%</span>
+                </div>
+                <div class="sub-metric-tile">
+                    <span class="sub-metric-label">💨 Wind Speed</span>
+                    <span id="modalWeatherWind" class="sub-metric-val">12 km/h</span>
+                </div>
+                <div class="sub-metric-tile">
+                    <span class="sub-metric-label">🌧️ Precipitation</span>
+                    <span id="modalWeatherPrecip" class="sub-metric-val">0.0 mm</span>
+                </div>
+                <div class="sub-metric-tile">
+                    <span class="sub-metric-label">🛡️ Weather Route Penalty</span>
+                    <span id="modalWeatherPenalty" class="sub-metric-val text-emerald-400">0.00 (Optimal)</span>
+                </div>
+            </div>
+
+            <div id="weatherAdvisoryBar" class="weather-advisory-strip" style="margin-bottom: 12px;">
+                💡 <span id="weatherAdvisoryText">Clear weather; high-illumination arterial corridors optimal for night transit.</span>
+            </div>
+
+            <div style="text-align: right;">
+                <button id="btnCloseWeatherModalBottom" class="btn-secondary-head" style="padding: 8px 18px;">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Toast Notification Banner -->
+    <div id="toastNotification" class="toast-bar"></div>
+
+    <!-- Application Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
