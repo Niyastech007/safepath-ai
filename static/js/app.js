@@ -527,6 +527,22 @@ class SafePathApp {
             });
         });
 
+        // 📱 Mobile Close / Open Panel Buttons
+        const btnMobileCloseSidebar = document.getElementById('btnMobileCloseSidebar');
+        if (btnMobileCloseSidebar) {
+            btnMobileCloseSidebar.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.switchTab('map');
+            });
+        }
+        const btnMobileOpenPanel = document.getElementById('btnMobileOpenPanel');
+        if (btnMobileOpenPanel) {
+            btnMobileOpenPanel.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.switchTab('navigate');
+            });
+        }
+
         // ‹/› Collapsible Sidebar Toggle
         const btnToggleSidebar = document.getElementById('btnToggleSidebar');
         if (btnToggleSidebar) {
@@ -686,6 +702,25 @@ class SafePathApp {
             }
         });
 
+        const sidebar = document.getElementById('sidebarPanel');
+
+        // Special handling for Mobile Map View
+        if (tabId === 'map') {
+            if (sidebar) sidebar.classList.add('mobile-hidden');
+            if (window.safeMap && safeMap.map) {
+                setTimeout(() => safeMap.map.invalidateSize(), 200);
+            }
+            return;
+        }
+
+        // For all other tabs (navigate, safety, emergency, nearby, report): show sidebar panel
+        if (sidebar) {
+            sidebar.classList.remove('mobile-hidden');
+            if (sidebar.classList.contains('collapsed')) {
+                this.toggleSidebar(false);
+            }
+        }
+
         // 3. Tab Panes
         document.querySelectorAll('.tab-pane').forEach(pane => {
             if (pane.id === `pane-${tabId}`) {
@@ -706,13 +741,7 @@ class SafePathApp {
         };
         if (titleEl) titleEl.innerText = titles[tabId] || 'ROUTE PLANNER';
 
-        // 5. Expand sidebar if collapsed
-        const sidebar = document.getElementById('sidebarPanel');
-        if (sidebar && sidebar.classList.contains('collapsed')) {
-            this.toggleSidebar(false);
-        }
-
-        // 6. Tab-specific updates
+        // 5. Tab-specific updates
         if (tabId === 'safety') {
             this.updateExplainableAIPanel();
             this.renderWhyNotFastest();
@@ -722,7 +751,7 @@ class SafePathApp {
             this.updateEmergencyPanel();
         }
 
-        // 7. Refresh Leaflet map dimensions
+        // 6. Refresh Leaflet map dimensions
         if (window.safeMap && safeMap.map) {
             setTimeout(() => safeMap.map.invalidateSize(), 150);
         }

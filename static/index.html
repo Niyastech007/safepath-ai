@@ -101,7 +101,12 @@
                     <span class="live-dot animate-pulse"></span>
                     <span class="sidebar-mode-label" id="sidebarCurrentTabTitle">ROUTE PLANNER</span>
                 </div>
-                <span id="dashLastUpdated" class="sidebar-timestamp">Updated: Just now</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="dashLastUpdated" class="sidebar-timestamp">Updated: Just now</span>
+                    <button type="button" id="btnMobileCloseSidebar" class="btn-mobile-map-toggle" title="View Fullscreen Map">
+                        <span>🗺️ View Map</span>
+                    </button>
+                </div>
             </div>
 
             <!-- ==================================================== -->
@@ -669,6 +674,11 @@
         <!-- 3. MAIN MAP VIEWPORT                                     -->
         <!-- ======================================================== -->
         <main class="map-viewport" id="mapViewport">
+            <!-- Mobile Button to Reopen Sidebar / Route Options -->
+            <button type="button" id="btnMobileOpenPanel" class="btn-mobile-panel-toggle" title="Open Route Options">
+                <span>📋 Route Options</span>
+            </button>
+
             <div id="map"></div>
 
             <!-- 🗺️ Floating Collapsible Map Layers Control -->
@@ -1323,6 +1333,32 @@
         </div>
     </div>
 
+
+    <!-- ======================================================== -->
+    <!-- 📱 MOBILE BOTTOM NAVIGATION BAR                          -->
+    <!-- ======================================================== -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile Navigation">
+        <button type="button" class="mobile-nav-btn" data-tab="map" id="mobile-tab-map">
+            <span class="mobile-icon">🗺️</span>
+            <span>Map</span>
+        </button>
+        <button type="button" class="mobile-nav-btn active" data-tab="navigate" id="mobile-tab-navigate">
+            <span class="mobile-icon">🧭</span>
+            <span>Routes</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-tab="safety" id="mobile-tab-safety">
+            <span class="mobile-icon">🧠</span>
+            <span>Safety</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-tab="emergency" id="mobile-tab-emergency">
+            <span class="mobile-icon">🚨</span>
+            <span>SOS</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-tab="nearby" id="mobile-tab-nearby">
+            <span class="mobile-icon">📍</span>
+            <span>Support</span>
+        </button>
+    </nav>
 
     <!-- Toast Notification Banner -->
     <div id="toastNotification" class="toast-bar"></div>
